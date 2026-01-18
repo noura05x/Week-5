@@ -1,0 +1,13 @@
+.venv/
+outputs/
+results/
+final_results/
+my_final_project/
+visualizations/
+reports/
+models/
+*.pkl
+*.h5
+*.pt
+*.pth
+*.csv
