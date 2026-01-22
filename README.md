@@ -23,55 +23,105 @@ install dependencies
 ```bash
 uv pip install -r requirements.txt
 ```
+##
+### Dataset
+
+This project uses the Arabic Company Reviews dataset for demonstration.
+
+🔗 **[Download Dataset: Arabic Company Reviews (عربي)](https://www.kaggle.com/datasets/fahdseddik/arabic-company-reviews)**
+
+
+
 
 ## EDA Commands
-class distribution
+class distribution (pie chart):
 ```bash
-uv run main.py eda distribution --csv_path "dataset.csv" --label_col "label_col"
+uv run main.py eda distribution --csv_path CompanyReviews.csv --label_col rating 
 ```
-Text Lengths
+class distribution(bar chart):
 ```bash
-uv run main.py eda histogram --csv_path "dataset.csv" --text_col "text_col" --unit words
+uv run main.py eda distribution --csv_path CompanyReviews.csv --label_col rating --plot_type bar
+```
+
+text length histogram (word count):
+```bash
+uv run main.py eda histogram  --csv_path CompanyReviews.csv --text_col review_description --unit words
+```
+text length histogram (character count):
+```bash
+uv run main.py eda histogram --csv_path CompanyReviews.csv --text_col review_description --unit chars 
 ```
 
 Outlier Removal
 ```bash
-uv run main.py eda remove-outliers --csv_path "dataset.csv" --text_col "text_col" --output "data_no_outliers.csv"
+uv run main.py eda remove-outliers --csv_path CompanyReviews.csv --text_col review_description --method iqr --output clean_data.csv
 ```
 
 ## Preprocessing
-Clean Arabic text (remove diacritics, stopwords, normalize).
+Remove Arabic-specific characters (tashkeel, tatweel, tarqeem, links, etc.)
 ```bash
-uv run main.py preprocess all --csv_path "data_no_outliers.csv" --text_col "text_col" --output "cleaned_data.csv"
+uv run main.py preprocess remove --csv_path CompanyReviews.csv --text_col review_description --output cleaned.csv
+```
+
+Remove stopwords using Arabic stopwords list
+```bash
+uv run main.py preprocess stopwords --csv_path cleaned.csv --text_col review_description --output no_stops.csv
+```
+
+Normalize Arabic text (hamza, alef maqsoura, taa marbouta)
+```bash
+uv run main.py preprocess replace --csv_path no_stops.csv --text_col review_description --output normalized.csv
+```
+
+Chain all preprocessing steps
+```bash
+uv run main.py preprocess all --csv_path CompanyReviews.csv --text_col review_description --output final.csv
 ```
 
 ## Embedding
 TF-IDF vectors
 ```bash
-uv run main.py embed tfidf --csv_path "cleaned_data.csv" --text_col "text_col" --output "vectors.pkl"
+uv run main.py embed tfidf --csv_path cleaned.csv --text_col review_description --max_features 5000 --output tfidf_vectors.pkl
 ```
+Model2Vec Embedding
+```bash
+uv run main.py embed model2vec --csv_path cleaned.csv --text_col review_description --output model2vec_vectors.pkl
+```
+
 BERT
 ```bash
-uv run main.py embed bert --csv_path "cleaned_data.csv" --text_col "text_col" --output "vectors.pkl"
+uv run main.py embed bert --csv_path cleaned.csv --text_col review_description --model_name aubmindlab/bert-base-arabertv2 --output bert_vectors.pkl
 ```
 
 ## Training & Evaluation
+### Available Models
+
+| Code  | Model                  |
+| ----- | ---------------------- |
+| `knn` | K-Nearest Neighbors    |
+| `lr`  | Logistic Regression    |
+| `rf`  | Random Forest          | 
+
+
 Train models and generate reports.
 ```bash
-uv run main.py train train-models --csv_path "cleaned_data.csv" --input_col "vectors.pkl" --output_col "label_col" --models all --save_model
+uv run main.py train train-models --csv_path clean_final.csv --input_col vec1.pkl --output_col rating --models all --save_model
 ```
+Training KNN
+ Accuracy: 0.6575
 
+
+Training LR
+Accuracy: 0.8268
+
+
+Training
+RF Accuracy: 0.8128
+##
 
 ## One-Line Pipeline
- Run the full workflow (Cleaning → Embedding → Training) in a single command.
+Run all steps in sequence
 ```bash
-uv run main.py pipeline \
-  --csv_path "dataset.csv" \
-  --text_col "text_col" \
-  --label_col "label_col" \
-  --preprocessing all \
-  --training all \
-  --save_report \
-  --save_models \
-  --output final_results/
-
+uv run main.py pipeline --csv_path CompanyReviews.csv --text_col review_description --label_col rating --preprocessing "remove,stopwords,replace" --embedding tfidf --training "knn,lr,rf" --output results/
+```
+thank you <3

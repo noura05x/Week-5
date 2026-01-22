@@ -4,11 +4,9 @@ import os
 import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
-
 def ensure_dir(path):
     if not os.path.exists(path):
         os.makedirs(path)
-
 @click.group()
 def eda():
     pass
@@ -49,13 +47,15 @@ def histogram(csv_path, text_col, unit):
     df = pd.read_csv(csv_path)
     output_dir = 'outputs/visualizations'
     ensure_dir(output_dir)
-    
-    plt.figure(figsize=(10, 6))
+
+    texts = df[text_col].fillna('').astype(str)
+
     if unit == 'words':
-        lengths = df[text_col].astype(str).apply(lambda x: len(x.split()))
+        lengths = texts.apply(lambda x: len(x.split()))
     else:
-        lengths = df[text_col].astype(str).apply(len)
-        
+        lengths = texts.apply(len)
+
+    plt.figure(figsize=(10, 6))   
     sns.histplot(lengths, bins=50, kde=True)
     plt.title(f'Text Length Distribution ({unit})')
     
@@ -63,9 +63,6 @@ def histogram(csv_path, text_col, unit):
     plt.savefig(save_path)
     print(f"Histogram saved to: {save_path}")
     plt.close()
-
-
-
 @eda.command()
 @click.option('--csv_path', required=True, help='Path to input CSV')
 @click.option('--text_col', required=True, help='Column containing text')
@@ -100,16 +97,11 @@ def remove_outliers(csv_path, text_col, method, output):
                 lower_bound = 1
                 
             print(f"IQR Thresholds: Lower={lower_bound:.1f}, Upper={upper_bound:.1f} words")
-            
-
             clean_df = df[(df['word_count'] >= lower_bound) & (df['word_count'] <= upper_bound)].copy()
-            
             removed_count = original_len - len(clean_df)
             print(f"Removed {removed_count} outliers ({(removed_count/original_len)*100:.1f}%)")
-            
             clean_df.drop(columns=['word_count'], inplace=True)
             clean_df.to_csv(output, index=False)
             print(f"Saved cleaned data to {output}")
-            
     except Exception as e:
         print(f"Error: {e}")
